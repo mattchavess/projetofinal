@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: iluminacao
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:minas}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo
+    username: ${DB_USER:minas}
+    password: ${DB_PASSWORD:minas123}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Sao_Paulo
+
+app:
+  iot:
+    api-key: ${IOT_API_KEY:dev-iot-key}
+    timeout-minutos: 5
+    verificacao-ms: 60000
+    retencao-leituras-dias: 3
+  jwt:
+    secret: ${JWT_SECRET:troque-esta-chave-em-producao-minimo-32-caracteres-0123456789}
+    expiracao-horas: 8
+  admin:
+    senha-inicial: ${ADMIN_PASSWORD:admin123}
+  cors:
+    origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:8081}
+  seed:
+    enabled: true
+  limites:
+    bateria-critica: 20
+    bateria-atencao: 40
+    combustivel-critico: 15
+    combustivel-atencao: 30
