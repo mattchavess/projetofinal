@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import StatusBadge from '../components/StatusBadge.vue'
 import BarraCarga from '../components/BarraCarga.vue'
@@ -20,8 +20,8 @@ const comandoGrupo = ref('CERRACAO')
 const formulario = ref({ aberto: false, torre: null })
 const carregando = ref(false)
 
-async function carregar() {
-  carregando.value = true
+async function carregar(silencioso = false) {
+  if (silencioso !== true) carregando.value = true
   const params = {}
   if (filtros.busca.trim()) params.busca = filtros.busca.trim()
   if (filtros.status) params.status = filtros.status
@@ -30,10 +30,17 @@ async function carregar() {
     torres.value = await torreService.listar(params)
     selecionadas.value = selecionadas.value.filter((id) => torres.value.some((t) => t.id === id))
   } catch (e) {
-    toast.erro(mensagemErro(e))
+    if (silencioso !== true) toast.erro(mensagemErro(e))
   } finally {
     carregando.value = false
   }
+}
+
+// Atualização automática: a cada 3 s, só com a aba visível e sem o formulário aberto
+let timer = null
+function atualizarSozinho() {
+  if (document.hidden || formulario.value.aberto) return
+  carregar(true)
 }
 
 let espera = null
@@ -79,7 +86,9 @@ async function aplicarGrupo() {
 onMounted(async () => {
   try { setores.value = await setorService.listar() } catch (e) { toast.erro(mensagemErro(e)) }
   carregar()
+  timer = setInterval(atualizarSozinho, 3000)
 })
+onBeforeUnmount(() => { clearInterval(timer); clearTimeout(espera) })
 </script>
 
 <template>

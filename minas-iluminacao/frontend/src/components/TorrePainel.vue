@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import Modal from './Modal.vue'
 import StatusBadge from './StatusBadge.vue'
 import BarraCarga from './BarraCarga.vue'
@@ -31,6 +31,17 @@ async function carregar() {
     toast.erro(mensagemErro(e))
     emit('fechar')
   }
+}
+
+// Atualização automática do painel aberto (silenciosa: não fecha nem mostra erro se falhar)
+let timer = null
+async function atualizarSozinho() {
+  if (document.hidden || ocupado.value) return
+  try {
+    const nova = await torreService.buscar(props.torreId)
+    const hist = (await historicoService.listar(props.torreId)).slice(0, 8)
+    if (!ocupado.value) { torre.value = nova; historico.value = hist }
+  } catch (e) { /* tenta de novo no próximo ciclo */ }
 }
 
 async function executar(comando) {
@@ -97,7 +108,8 @@ async function abrirManutencao() {
   }
 }
 
-onMounted(carregar)
+onMounted(() => { carregar(); timer = setInterval(atualizarSozinho, 3000) })
+onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <template>

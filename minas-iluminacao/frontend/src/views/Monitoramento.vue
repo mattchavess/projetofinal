@@ -23,10 +23,10 @@ const INDICADORES = {
   MANUTENCAO: { rotulo: 'Manutenção', tom: 'info' }
 }
 
-async function carregar() {
+async function carregar(silencioso = false) {
   try {
     ;[torres.value, alertas.value] = await Promise.all([torreService.listar(), alertaService.listar({ status: 'ATIVO' })])
-  } catch (e) { toast.erro(mensagemErro(e)) }
+  } catch (e) { if (silencioso !== true) toast.erro(mensagemErro(e)) }
 }
 
 /** Indicador: manutenção > crítico > alerta > normal. */
@@ -49,13 +49,13 @@ const visiveis = computed(() =>
   comIndicador.value.filter((t) => !filtro.value || t.ind === filtro.value).sort((a, b) => ordem[a.ind] - ordem[b.ind] || a.nome.localeCompare(b.nome))
 )
 
-onMounted(() => { carregar(); timer = setInterval(carregar, 10000) })
+onMounted(() => { carregar(); timer = setInterval(() => { if (!document.hidden) carregar(true) }, 3000) })
 onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <template>
   <div class="pagina-cab">
-    <div><h1>Monitoramento</h1><p>As torres com problema aparecem primeiro. Atualiza a cada 10 segundos.</p></div>
+    <div><h1>Monitoramento</h1><p>As torres com problema aparecem primeiro. Atualiza a cada 3 segundos.</p></div>
   </div>
 
   <div class="resumo">

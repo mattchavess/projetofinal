@@ -47,3 +47,32 @@ Fluxo de demonstração:
 - Modos: Econômico, Normal e Intensidade máxima mudam o brilho do LED; Cerração faz o LED piscar.
 - Ao baixar a luminosidade do LDR (arraste o controle no Wokwi), o ESP32 liga a torre e informa o backend; o painel passa a mostrar a torre como ligada.
 - O módulo foi calibrado para `luminosidade < 300` = escuro (escala 0 a 1000). Observe o valor no monitor serial e ajuste `LIMITE_ESCURO` se o sensor simulado se comportar ao contrário.
+
+## Arduino Uno real (LDR + 3 LEDs, via USB)
+
+O Uno não tem Wi-Fi, então uma pequena **ponte** no computador liga a porta USB ao backend, usando o mesmo contrato acima. **Cada LED é uma torre**, com estado e modo próprios: LED do pino 10 = torre 1, pino 11 = torre 2, pino 12 = torre 3.
+
+```
+Arduino Uno --USB--> ponte-serial/ponte.py --HTTP--> backend (Docker, :8080) --> painel
+```
+
+**Montagem:** LEDs (com resistor de 220 ohms) nos pinos 10, 11 e 12; LDR em divisor de tensão com resistor de 10 kohms no A0 (escuro = leitura baixa).
+
+**Passo a passo**
+1. Grave `arduino-uno/arduino-uno.ino` no Uno (placa **Arduino Uno** selecionada) e **feche o Monitor Serial**.
+2. Suba o sistema: `docker compose up` (na raiz do projeto).
+3. Instale e rode a ponte. `--torres` lista os ids das torres do banco na ordem dos LEDs:
+   ```bash
+   pip install pyserial
+   python ponte-serial/ponte.py --porta COM3 --torres 1,2,3
+   ```
+4. No painel, abra Monitoramento (atualiza a cada 10 s; a lista de Torres precisa de F5). Cubra o LDR: as três torres ligam e depois cada uma pode ser controlada separadamente. Clique em Ligar/Desligar ou troque o modo de uma torre e só o LED dela responde, em até 2 s.
+
+**Modos = brilho do LED:** Econômico fraco, Normal médio, Intensidade máxima total, Cerração piscando. O pino 12 não tem PWM, então o brilho dele é gerado por software; para brilho mais estável, mova o LED 3 para o pino 9 ou 6 e ajuste o vetor `pinos` no sketch.
+
+**Observações**
+- A ponte roda no computador, fora do Docker (contêiner não enxerga a porta USB no Windows/Mac). O backend continua no Docker.
+- Protocolo serial: Arduino envia `T,<torre>,<luz>,<0|1>`; a ponte envia `<torre>:<COMANDO>` (ex.: `2:LIGAR`).
+- O LDR é um só: o escuro liga as 3 torres ao mesmo tempo. Um comando do painel vale para aquela torre até a próxima mudança claro/escuro.
+- A luminosidade vai na escala bruta do Uno (0 a 1023). Os limites 75 e 100 ficam no topo do sketch.
+- O Uno não mede bateria, então a ponte não envia esse campo e a bateria das torres não é alterada pela telemetria.
